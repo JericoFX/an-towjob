@@ -1,7 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local PaymentTax = 15
 local Bail = {}
-
+local PInfo = {}
 RegisterNetEvent('an-tow:server:DoBail', function(bool, vehInfo)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
@@ -67,3 +67,30 @@ end)
 QBCore.Commands.Add("npc", "Toggle Npc Job", {}, false, function(source, args)
 	TriggerClientEvent("jobs:client:ToggleNpc", source)
 end)
+
+QBCore.Functions.CreateCallback("an-tow::server::SpawnVehicle",function(source,vehicle,coords,cb) 
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then return end
+    if not PInfo[Player.PlayerData.citizenid] then PInfo[Player.PlayerData.citizenid] = {} end
+    local _coords = type(coords) == "vector4" and coords or vector4(table.unpack(coords))
+    local Veh =  CreateVehicleSetterServer(vehicle.vehicle,"automobile",_coords.x,_coords.y,_coords.z,_coords.w)
+    while not DoesEntityExist(Veh) do Wait(0) end
+    local network = NetworkGetNetworkIdFromEntity(Veh)
+    Wait(200)
+    local netid = NetworkGetEntityFromNetworkId(network)
+    local plate = math.random(1000,9999).."AN"
+    SetVehicleNumberPlateText(Veh, plate)
+    while GetVehicleNumberPlateText(Veh) ~= plate do
+        Wait(0)
+        SetVehicleNumberPlateText(Veh, plate)
+    end
+    PInfo[Player.PlayerData.citizenid] = {
+        netid = netid,
+        network = network,
+        plate = plate
+    }
+    local Entity = Entity(netid)
+    Entity.state:set("ANTow",{netid = netid,  network = network, plate = plate},true)
+end)
+
+-- RegisterNetEvent("",)

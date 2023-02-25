@@ -23,6 +23,11 @@ local function getRandomVehicleLocation()
     return randomVehicle
 end
 
+local function GetEntityID(entity)
+    return NetworkGetEntityFromNetworkId(NetworkGetNetworkIdFromEntity(entity))
+end
+
+
 CreateThread(function()
     QBCore.Functions.LoadModel(Config.PedHash)
     towped = CreatePed(0, Config.PedHash, Config.PedPos.x, Config.PedPos.y, Config.PedPos.z-1.0, Config.PedPos.w, false, false)
@@ -244,9 +249,10 @@ local function MenuGarage()
         towMenu[#towMenu+1] = {
             header = Config.Vehicles[k],
             params = {
-                event = "an-tow:client:TakeOutVehicle",
+                event = "an-tow::server::SpawnVehicle",
                 args = {
-                    vehicle = k
+                    vehicle = k,
+                    coords = Config.Locations["vehicle"].coords
                 }
             }
         }
@@ -626,3 +632,16 @@ CreateThread(function()
 end)
     
 
+AddStateBagChangeHandler('ANtow', nil, function(bagName, key, value, _unused, replicated)
+    local entity = GetEntityFromStateBagName(bagName)
+    if entity == 0 then return end
+    local network = GetEntityID(entity)
+    selectedVeh = NetToVeh(network)
+    exports[Config.fuel]:SetFuel(network, 100.0)
+    CloseMenuFull()
+    TriggerEvent("vehiclekeys:client:SetOwner", value.plate)
+    SetVehicleEngineOn(network, true, true)
+    for i = 1, 9, 1 do
+        SetVehicleExtra(network, i, 0)
+     end
+end)
